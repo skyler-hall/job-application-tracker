@@ -37,12 +37,14 @@ CREATE TABLE jobs (
 
 -- applications: each time I apply to a job
 -- interview_data is a JSON array of interview rounds
+-- current_round: 0 = no interviews yet
 CREATE TABLE applications (
     application_id    INT PRIMARY KEY AUTO_INCREMENT,
     job_id            INT NOT NULL,
     application_date  DATE NOT NULL,
     status            ENUM('Applied','Screening','Interview','Offer','Rejected','Withdrawn')
                       NOT NULL DEFAULT 'Applied',
+    current_round     TINYINT UNSIGNED NOT NULL DEFAULT 0,
     resume_version    VARCHAR(50),
     cover_letter_sent BOOLEAN NOT NULL DEFAULT FALSE,
     interview_data    JSON,
@@ -62,4 +64,18 @@ CREATE TABLE contacts (
     notes        TEXT,
     CONSTRAINT fk_contacts_company FOREIGN KEY (company_id)
         REFERENCES companies (company_id) ON DELETE CASCADE
+);
+
+-- events: career fairs, info sessions, networking, etc.
+-- company_id is optional since some events have many companies
+CREATE TABLE events (
+    event_id    INT PRIMARY KEY AUTO_INCREMENT,
+    company_id  INT,
+    event_name  VARCHAR(100) NOT NULL,
+    event_type  ENUM('Career Fair','Info Session','Networking','Workshop','Conference','Other'),
+    event_date  DATE NOT NULL,
+    location    VARCHAR(100),
+    notes       TEXT,
+    CONSTRAINT fk_events_company FOREIGN KEY (company_id)
+        REFERENCES companies (company_id) ON DELETE SET NULL
 );
