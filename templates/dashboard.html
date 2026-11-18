@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="stat-grid">
+    <a class="stat-card" href="/companies"><span class="stat-number">{{ counts.companies }}</span><span class="stat-label">Companies</span></a>
+    <a class="stat-card" href="/jobs"><span class="stat-number">{{ counts.jobs }}</span><span class="stat-label">Jobs</span></a>
+    <a class="stat-card" href="/applications"><span class="stat-number">{{ counts.applications }}</span><span class="stat-label">Applications</span></a>
+    <a class="stat-card" href="/contacts"><span class="stat-number">{{ counts.contacts }}</span><span class="stat-label">Contacts</span></a>
+    <a class="stat-card" href="/events"><span class="stat-number">{{ counts.events }}</span><span class="stat-label">Events</span></a>
+    <div class="stat-card highlight"><span class="stat-number">{{ response_rate }}%</span><span class="stat-label">Response Rate</span></div>
+</div>
+
+<div class="two-col">
+    <section class="card">
+        <h2>Applications by Status</h2>
+        {% set max_count = by_status.values() | max %}
+        {% for status in statuses %}
+            <div class="bar-row">
+                <span class="bar-label">{{ status }}</span>
+                <div class="bar-track">
+                    <div class="bar-fill status-{{ status | lower }}"
+                         style="width: {{ (by_status[status] / max_count * 100) if max_count else 0 }}%"></div>
+                </div>
+                <span class="bar-count">{{ by_status[status] }}</span>
+            </div>
+        {% endfor %}
+    </section>
+
+    <section class="card">
+        <h2>Upcoming Events</h2>
+        {% if upcoming_events %}
+            <ul class="simple-list">
+            {% for e in upcoming_events %}
+                <li>
+                    <strong>{{ e.event_date.strftime('%b %d') }}</strong>
+                    {{ e.event_name }}
+                    <span class="muted">{{ e.company_name or e.event_type }}</span>
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p class="muted">No upcoming events.</p>
+        {% endif %}
+    </section>
+</div>
+
+<section class="card">
+    <h2>Recent Applications</h2>
+    {% if recent %}
+    <table>
+        <thead><tr><th>Date</th><th>Job</th><th>Company</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for a in recent %}
+            <tr>
+                <td>{{ a.application_date.strftime('%b %d, %Y') }}</td>
+                <td>{{ a.job_title }}</td>
+                <td>{{ a.company_name }}</td>
+                <td><span class="badge status-{{ a.status | lower }}">{{ a.status }}</span></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p class="muted">No applications yet.</p>
+    {% endif %}
+</section>
+{% endblock %}
