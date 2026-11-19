@@ -275,5 +275,65 @@ def contact_delete(contact_id):
     flash(f"Deleted {contact['contact_name']}.", "success")
     return redirect(url_for("contacts"))
 
+# ---------------------------------------------------------------------
+# Events
+# ---------------------------------------------------------------------
+
+def _event_form(event, is_edit):
+    return render_template("event_form.html", event=event, is_edit=is_edit,
+                           companies=db.get_company_choices(), event_types=v.EVENT_TYPES)
+
+
+@app.route("/events")
+def events():
+    when = request.args.get("when", "")
+    return render_template("events.html", events=db.get_events(when), when=when)
+
+
+@app.route("/events/<int:event_id>")
+def event_detail(event_id):
+    event = db.get_event(event_id) or abort(404)
+    return render_template("event_detail.html", event=event)
+
+
+@app.route("/events/new", methods=["GET", "POST"])
+def event_new():
+    if request.method == "POST":
+        company_ids = {c["company_id"] for c in db.get_company_choices()}
+        data, errors = v.validate_event(request.form, company_ids)
+        if not errors:
+            new_id = db.create_event(data)
+            flash(f"Added {data['event_name']}.", "success")
+            return redirect(url_for("event_detail", event_id=new_id))
+        for error in errors:
+            flash(error, "error")
+        return _event_form(data, is_edit=False)
+    return _event_form({"company_id": request.args.get("company_id")}, is_edit=False)
+
+
+@app.route("/events/<int:event_id>/edit", methods=["GET", "POST"])
+def event_edit(event_id):
+    event = db.get_event(event_id) or abort(404)
+    if request.method == "POST":
+        company_ids = {c["company_id"] for c in db.get_company_choices()}
+        data, errors = v.validate_event(request.form, company_ids)
+        if not errors:
+            db.update_event(event_id, data)
+            flash(f"Updated {data['event_name']}.", "success")
+            return redirect(url_for("event_detail", event_id=event_id))
+        for error in errors:
+            flash(error, "error")
+        data["event_id"] = event_id
+        return _event_form(data, is_edit=True)
+    return _event_form(event, is_edit=True)
+
+
+@app.route("/events/<int:event_id>/delete", methods=["POST"])
+def event_delete(event_id):
+    event = db.get_event(event_id) or abort(404)
+    db.delete_event(event_id)
+    flash(f"Deleted {event['event_name']}.", "success")
+    return redirect(url_for("events"))
+
 if __name__ == "__main__":
     app.run(debug=True)

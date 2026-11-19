@@ -140,3 +140,28 @@ def validate_contact(form, company_ids):
         errors.append("Phone number can only contain digits, spaces, and + ( ) - .")
     check_url(errors, "LinkedIn URL", data["linkedin_url"])
     return data, errors
+
+EVENT_TYPES = ["Career Fair", "Info Session", "Networking", "Workshop", "Conference", "Other"]
+
+
+def validate_event(form, company_ids):
+    errors = []
+    data = {
+        "company_id": clean(form.get("company_id")),
+        "event_name": clean(form.get("event_name")),
+        "event_type": clean(form.get("event_type")),
+        "event_date": clean(form.get("event_date")),
+        "location": clean(form.get("location")),
+        "notes": clean(form.get("notes")),
+    }
+    # Company is optional for events (a career fair has many companies)
+    if data["company_id"] and (not data["company_id"].isdigit() or int(data["company_id"]) not in company_ids):
+        errors.append("Please choose a valid company.")
+    if not data["event_name"]:
+        errors.append("Event name is required.")
+    check_length(errors, "Event name", data["event_name"], 100)
+    if data["event_type"] and data["event_type"] not in EVENT_TYPES:
+        errors.append("Please choose a valid event type.")
+    check_date(errors, "Event date", data["event_date"], required=True)
+    check_length(errors, "Location", data["location"], 100)
+    return data, errors

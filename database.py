@@ -397,3 +397,55 @@ def update_contact(contact_id, data):
 
 def delete_contact(contact_id):
     execute("DELETE FROM contacts WHERE contact_id = %s", (contact_id,))
+
+# ---------------------------------------------------------------------
+# Events
+# ---------------------------------------------------------------------
+
+def get_events(when=None):
+    """when = 'upcoming', 'past', or None for all."""
+    sql = """
+        SELECT e.*, c.company_name
+        FROM events e
+        LEFT JOIN companies c ON e.company_id = c.company_id
+    """
+    if when == "upcoming":
+        sql += " WHERE e.event_date >= CURDATE() ORDER BY e.event_date"
+    elif when == "past":
+        sql += " WHERE e.event_date < CURDATE() ORDER BY e.event_date DESC"
+    else:
+        sql += " ORDER BY e.event_date DESC"
+    return query_all(sql)
+
+
+def get_event(event_id):
+    return query_one("""
+        SELECT e.*, c.company_name
+        FROM events e LEFT JOIN companies c ON e.company_id = c.company_id
+        WHERE e.event_id = %s
+    """, (event_id,))
+
+
+def _event_params(data):
+    return (data["company_id"], data["event_name"], data["event_type"],
+            data["event_date"], data["location"], data["notes"])
+
+
+def create_event(data):
+    return execute("""
+        INSERT INTO events (company_id, event_name, event_type, event_date, location, notes)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, _event_params(data))
+
+
+def update_event(event_id, data):
+    execute("""
+        UPDATE events
+        SET company_id = %s, event_name = %s, event_type = %s,
+            event_date = %s, location = %s, notes = %s
+        WHERE event_id = %s
+    """, _event_params(data) + (event_id,))
+
+
+def delete_event(event_id):
+    execute("DELETE FROM events WHERE event_id = %s", (event_id,))
