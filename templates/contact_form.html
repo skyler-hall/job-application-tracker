@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if is_edit else "Add" }} Contact{% endblock %}
+
+{% block content %}
+<h1>{{ "Edit " ~ contact.contact_name if is_edit else "Add Contact" }}</h1>
+
+{% if not companies %}
+    <div class="card">
+        <p>You need a company before you can add a contact.</p>
+        <a class="btn" href="{{ url_for('company_new') }}">+ Add Company</a>
+    </div>
+{% else %}
+<form method="post" class="card">
+    <div class="form-grid">
+        <div>
+            <label class="required" for="contact_name">Name</label>
+            <input type="text" id="contact_name" name="contact_name" maxlength="100" required value="{{ contact.contact_name or '' }}">
+        </div>
+        <div>
+            <label class="required" for="company_id">Company</label>
+            <select id="company_id" name="company_id" required>
+                <option value="">Choose a company</option>
+                {% for c in companies %}
+                    <option value="{{ c.company_id }}" {% if c.company_id|string == contact.company_id|string %}selected{% endif %}>{{ c.company_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" maxlength="100" placeholder="Technical Recruiter" value="{{ contact.title or '' }}">
+        </div>
+        <div>
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" maxlength="100" value="{{ contact.email or '' }}">
+        </div>
+        <div>
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" name="phone" maxlength="20" placeholder="305-555-0123" value="{{ contact.phone or '' }}">
+        </div>
+        <div>
+            <label for="linkedin_url">LinkedIn URL</label>
+            <input type="url" id="linkedin_url" name="linkedin_url" maxlength="200" placeholder="https://www.linkedin.com/in/" value="{{ contact.linkedin_url or '' }}">
+        </div>
+        <div class="full">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes">{{ contact.notes or '' }}</textarea>
+        </div>
+    </div>
+    <div class="form-actions">
+        <button class="btn" type="submit">{{ "Save Changes" if is_edit else "Add Contact" }}</button>
+        <a class="btn btn-secondary" href="{{ url_for('contact_detail', contact_id=contact.contact_id) if is_edit else url_for('contacts') }}">Cancel</a>
+    </div>
+</form>
+{% endif %}
+{% endblock %}

@@ -48,6 +48,25 @@
 </div>
 
 <section class="card">
+    <h2>My Applications ({{ applications | length }})</h2>
+    {% if applications %}
+    <table>
+        <thead><tr><th>Job</th><th>Applied</th><th>Status</th><th>Round</th></tr></thead>
+        <tbody>
+        {% for a in applications %}
+            <tr>
+                <td><a href="/applications/{{ a.application_id }}">{{ a.job_title }}</a></td>
+                <td>{{ a.application_date.strftime('%b %d, %Y') }}</td>
+                <td><span class="badge status-{{ a.status | lower }}">{{ a.status }}</span></td>
+                <td>{{ "Round " ~ a.current_round if a.current_round else "" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}<p class="muted">No applications to this company yet.</p>{% endif %}
+</section>
+
+<section class="card">
     <h2>Events ({{ events | length }})</h2>
     {% if events %}
         <ul class="simple-list">

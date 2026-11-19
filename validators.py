@@ -113,3 +113,30 @@ def validate_job(form, company_ids):
             and data["salary_min"] > data["salary_max"]):
         errors.append("Minimum salary cannot be more than maximum salary.")
     return data, errors
+
+def validate_contact(form, company_ids):
+    errors = []
+    data = {
+        "company_id": clean(form.get("company_id")),
+        "contact_name": clean(form.get("contact_name")),
+        "title": clean(form.get("title")),
+        "email": clean(form.get("email")),
+        "phone": clean(form.get("phone")),
+        "linkedin_url": clean(form.get("linkedin_url")),
+        "notes": clean(form.get("notes")),
+    }
+    if not data["company_id"] or not data["company_id"].isdigit() or int(data["company_id"]) not in company_ids:
+        errors.append("Please choose a company.")
+    if not data["contact_name"]:
+        errors.append("Contact name is required.")
+    check_length(errors, "Contact name", data["contact_name"], 100)
+    check_length(errors, "Title", data["title"], 100)
+    check_length(errors, "Email", data["email"], 100)
+    check_length(errors, "Phone", data["phone"], 20)
+    check_length(errors, "LinkedIn URL", data["linkedin_url"], 200)
+    if data["email"] and not EMAIL_RE.match(data["email"]):
+        errors.append("Email address doesn't look valid.")
+    if data["phone"] and not re.fullmatch(r"[0-9+()\-.\s]{7,20}", data["phone"]):
+        errors.append("Phone number can only contain digits, spaces, and + ( ) - .")
+    check_url(errors, "LinkedIn URL", data["linkedin_url"])
+    return data, errors

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Contacts{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Contacts</h1>
+    <a class="btn" href="{{ url_for('contact_new') }}">+ Add Contact</a>
+</div>
+
+<form class="search-bar card" method="get">
+    <input type="text" name="q" value="{{ search }}" placeholder="Search by name, title, or company">
+    <button class="btn" type="submit">Search</button>
+    {% if search %}<a class="btn btn-secondary" href="{{ url_for('contacts') }}">Clear</a>{% endif %}
+</form>
+
+<div class="card">
+{% if contacts %}
+    <table>
+        <thead><tr><th>Name</th><th>Title</th><th>Company</th><th>Email</th><th>Phone</th><th></th></tr></thead>
+        <tbody>
+        {% for t in contacts %}
+            <tr>
+                <td><a href="{{ url_for('contact_detail', contact_id=t.contact_id) }}"><strong>{{ t.contact_name }}</strong></a></td>
+                <td>{{ t.title or "" }}</td>
+                <td><a href="{{ url_for('company_detail', company_id=t.company_id) }}">{{ t.company_name }}</a></td>
+                <td>{% if t.email %}<a href="mailto:{{ t.email }}">{{ t.email }}</a>{% endif %}</td>
+                <td>{{ t.phone or "" }}</td>
+                <td class="actions">
+                    <a class="btn btn-sm btn-secondary" href="{{ url_for('contact_edit', contact_id=t.contact_id) }}">Edit</a>
+                    <form method="post" action="{{ url_for('contact_delete', contact_id=t.contact_id) }}"
+                          onsubmit="return confirm('Delete contact {{ t.contact_name }}?');">
+                        <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p class="muted">No contacts found.</p>
+{% endif %}
+</div>
+{% endblock %}

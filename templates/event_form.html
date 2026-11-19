@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if is_edit else "Add" }} Event{% endblock %}
+
+{% block content %}
+<h1>{{ "Edit " ~ event.event_name if is_edit else "Add Event" }}</h1>
+
+<form method="post" class="card">
+    <div class="form-grid">
+        <div class="full">
+            <label class="required" for="event_name">Event Name</label>
+            <input type="text" id="event_name" name="event_name" maxlength="100" required value="{{ event.event_name or '' }}">
+        </div>
+        <div>
+            <label class="required" for="event_date">Date</label>
+            <input type="date" id="event_date" name="event_date" required value="{{ event.event_date or '' }}">
+        </div>
+        <div>
+            <label for="event_type">Type</label>
+            <select id="event_type" name="event_type">
+                <option value="">Not specified</option>
+                {% for t in event_types %}
+                    <option value="{{ t }}" {% if t == event.event_type %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="company_id">Company</label>
+            <select id="company_id" name="company_id">
+                <option value="">None / multiple companies</option>
+                {% for c in companies %}
+                    <option value="{{ c.company_id }}" {% if c.company_id|string == event.company_id|string %}selected{% endif %}>{{ c.company_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="location">Location</label>
+            <input type="text" id="location" name="location" maxlength="100" placeholder="FIU MMC, Zoom, ..." value="{{ event.location or '' }}">
+        </div>
+        <div class="full">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes">{{ event.notes or '' }}</textarea>
+        </div>
+    </div>
+    <div class="form-actions">
+        <button class="btn" type="submit">{{ "Save Changes" if is_edit else "Add Event" }}</button>
+        <a class="btn btn-secondary" href="{{ url_for('event_detail', event_id=event.event_id) if is_edit else url_for('events') }}">Cancel</a>
+    </div>
+</form>
+{% endblock %}

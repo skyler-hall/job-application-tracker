@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Applications{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Applications</h1>
+    <a class="btn" href="{{ url_for('application_new') }}">+ Add Application</a>
+</div>
+
+<form class="search-bar card" method="get">
+    <input type="text" name="q" value="{{ search }}" placeholder="Search by job or company">
+    <select name="status">
+        <option value="">All statuses</option>
+        {% for s in statuses %}
+            <option value="{{ s }}" {% if s == status %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+    </select>
+    <button class="btn" type="submit">Filter</button>
+    {% if status or search %}<a class="btn btn-secondary" href="{{ url_for('applications') }}">Clear</a>{% endif %}
+</form>
+
+<div class="card">
+{% if applications %}
+    <table>
+        <thead>
+            <tr><th>Applied</th><th>Job</th><th>Company</th><th>Status</th><th>Round</th><th>Resume</th><th>Cover Letter</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for a in applications %}
+            <tr>
+                <td><a href="{{ url_for('application_detail', application_id=a.application_id) }}">{{ a.application_date.strftime('%b %d, %Y') }}</a></td>
+                <td><a href="{{ url_for('job_detail', job_id=a.job_id) }}">{{ a.job_title }}</a></td>
+                <td>{{ a.company_name }}</td>
+                <td><span class="badge status-{{ a.status | lower }}">{{ a.status }}</span></td>
+                <td>{{ a.current_round if a.current_round else "" }}</td>
+                <td>{{ a.resume_version or "" }}</td>
+                <td>{{ "Yes" if a.cover_letter_sent else "No" }}</td>
+                <td class="actions">
+                    <a class="btn btn-sm btn-secondary" href="{{ url_for('application_edit', application_id=a.application_id) }}">Edit</a>
+                    <form method="post" action="{{ url_for('application_delete', application_id=a.application_id) }}"
+                          onsubmit="return confirm('Delete your application to {{ a.job_title }} at {{ a.company_name }}?');">
+                        <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p class="muted">No applications found.</p>
+{% endif %}
+</div>
+{% endblock %}

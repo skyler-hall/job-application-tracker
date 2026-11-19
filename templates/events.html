@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Events{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Events</h1>
+    <a class="btn" href="{{ url_for('event_new') }}">+ Add Event</a>
+</div>
+
+<div class="search-bar card">
+    <a class="btn {% if not when %}{% else %}btn-secondary{% endif %}" href="{{ url_for('events') }}">All</a>
+    <a class="btn {% if when == 'upcoming' %}{% else %}btn-secondary{% endif %}" href="{{ url_for('events', when='upcoming') }}">Upcoming</a>
+    <a class="btn {% if when == 'past' %}{% else %}btn-secondary{% endif %}" href="{{ url_for('events', when='past') }}">Past</a>
+</div>
+
+<div class="card">
+{% if events %}
+    <table>
+        <thead><tr><th>Date</th><th>Event</th><th>Type</th><th>Company</th><th>Location</th><th></th></tr></thead>
+        <tbody>
+        {% for e in events %}
+            <tr>
+                <td>{{ e.event_date.strftime('%b %d, %Y') }}</td>
+                <td><a href="{{ url_for('event_detail', event_id=e.event_id) }}"><strong>{{ e.event_name }}</strong></a></td>
+                <td>{{ e.event_type or "" }}</td>
+                <td>{% if e.company_id %}<a href="{{ url_for('company_detail', company_id=e.company_id) }}">{{ e.company_name }}</a>{% else %}<span class="muted">Multiple / none</span>{% endif %}</td>
+                <td>{{ e.location or "" }}</td>
+                <td class="actions">
+                    <a class="btn btn-sm btn-secondary" href="{{ url_for('event_edit', event_id=e.event_id) }}">Edit</a>
+                    <form method="post" action="{{ url_for('event_delete', event_id=e.event_id) }}"
+                          onsubmit="return confirm('Delete event {{ e.event_name }}?');">
+                        <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p class="muted">No events found.</p>
+{% endif %}
+</div>
+{% endblock %}

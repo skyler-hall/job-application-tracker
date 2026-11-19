@@ -98,7 +98,18 @@ def get_dashboard_stats():
         LIMIT 5
     """)
 
+    # Applications still in progress (Screening or Interview), with their round
+    active_interviews = query_all("""
+        SELECT a.application_id, a.status, a.current_round, j.job_title, c.company_name
+        FROM applications a
+        JOIN jobs j      ON a.job_id = j.job_id
+        JOIN companies c ON j.company_id = c.company_id
+        WHERE a.status IN ('Screening', 'Interview')
+        ORDER BY a.current_round DESC, c.company_name
+    """)
+
     return {
+        "active_interviews": active_interviews,
         "counts": counts,
         "by_status": by_status,
         "response_rate": response_rate,
@@ -166,6 +177,12 @@ def get_company_related(company_id):
         "events": query_all(
             "SELECT * FROM events WHERE company_id = %s ORDER BY event_date DESC",
             (company_id,)),
+            "applications": query_all("""
+            SELECT a.application_id, a.application_date, a.status, a.current_round, j.job_title
+            FROM applications a JOIN jobs j ON a.job_id = j.job_id
+            WHERE j.company_id = %s
+            ORDER BY a.application_date DESC
+        """, (company_id,)),
     }
 
 
@@ -255,3 +272,128 @@ def get_job_applications(job_id):
     return query_all(
         "SELECT * FROM applications WHERE job_id = %s ORDER BY application_date DESC",
         (job_id,))
+
+# ---------------------------------------------------------------------
+# Applications
+# ---------------------------------------------------------------------
+
+def _with_interviews(app_row):
+    """Add an 'interviews' list parsed from the interview_data JSON column."""
+    if app_row:
+        app_row["interviews"] = parse_json_list(app_row.get("interview_data"))
+    return app_row
+
+
+def get_applications(status=None, search=None):
+    sql = """
+        SELECT a.*, j.job_title, c.company_name, c.company_id
+        FROM applications a
+        JOIN jobs j      ON a.job_id = j.job_id
+        JOIN companies c ON j.company_id = c.company_id
+        WHERE 1 = 1
+    """
+    params = []
+    if status:
+        sql += " AND a.status = %s"
+        params.append(status)
+    if search:
+        sql += " AND (j.job_title LIKE %s OR c.company_name LIKE %s)"
+        params += [f"%{search}%", f"%{search}%"]
+    sql += " ORDER BY a.application_date DESC, a.application_id DESC"
+    return [_with_interviews(row) for row in query_all(sql, params)]
+
+
+def get_application(application_id):
+    return _with_interviews(query_one("""
+        SELECT a.*, j.job_title, c.company_name, c.company_id
+        FROM applications a
+        JOIN jobs j      ON a.job_id = j.job_id
+        JOIN companies c ON j.company_id = c.company_id
+        WHERE a.application_id = %s
+    """, (application_id,)))
+
+
+def get_job_choices():
+    """Jobs for the application dropdown, labeled 'Title at Company'."""
+    return query_all("""
+        SELECT j.job_id, j.job_title, c.company_name
+        FROM jobs j JOIN companies c ON j.company_id = c.company_id
+        ORDER BY c.company_name, j.job_title
+    """)
+
+
+def _application_params(data):
+    interviews = json.dumps(data["interviews"]) if data["interviews"] else None
+    return (data["job_id"], data["application_date"], data["status"], data["current_round"],
+            data["resume_version"], data["cover_letter_sent"], interviews)
+
+
+def create_application(data):
+    return execute("""
+        INSERT INTO applications (job_id, application_date, status, current_round,
+                                  resume_version, cover_letter_sent, interview_data)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """, _application_params(data))
+
+
+def update_application(application_id, data):
+    execute("""
+        UPDATE applications
+        SET job_id = %s, application_date = %s, status = %s, current_round = %s,
+            resume_version = %s, cover_letter_sent = %s, interview_data = %s
+        WHERE application_id = %s
+    """, _application_params(data) + (application_id,))
+
+
+def delete_application(application_id):
+    execute("DELETE FROM applications WHERE application_id = %s", (application_id,))
+
+# ---------------------------------------------------------------------
+# Contacts
+# ---------------------------------------------------------------------
+
+def get_contacts(search=None):
+    sql = """
+        SELECT t.*, c.company_name
+        FROM contacts t
+        JOIN companies c ON t.company_id = c.company_id
+    """
+    params = []
+    if search:
+        sql += " WHERE t.contact_name LIKE %s OR c.company_name LIKE %s OR t.title LIKE %s"
+        params = [f"%{search}%"] * 3
+    sql += " ORDER BY c.company_name, t.contact_name"
+    return query_all(sql, params)
+
+
+def get_contact(contact_id):
+    return query_one("""
+        SELECT t.*, c.company_name
+        FROM contacts t JOIN companies c ON t.company_id = c.company_id
+        WHERE t.contact_id = %s
+    """, (contact_id,))
+
+
+def _contact_params(data):
+    return (data["company_id"], data["contact_name"], data["title"], data["email"],
+            data["phone"], data["linkedin_url"], data["notes"])
+
+
+def create_contact(data):
+    return execute("""
+        INSERT INTO contacts (company_id, contact_name, title, email, phone, linkedin_url, notes)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """, _contact_params(data))
+
+
+def update_contact(contact_id, data):
+    execute("""
+        UPDATE contacts
+        SET company_id = %s, contact_name = %s, title = %s, email = %s,
+            phone = %s, linkedin_url = %s, notes = %s
+        WHERE contact_id = %s
+    """, _contact_params(data) + (contact_id,))
+
+
+def delete_contact(contact_id):
+    execute("DELETE FROM contacts WHERE contact_id = %s", (contact_id,))

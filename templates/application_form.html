@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if is_edit else "Add" }} Application{% endblock %}
+
+{% block content %}
+<h1>{{ "Edit Application" if is_edit else "Add Application" }}</h1>
+
+{% if not jobs %}
+    <div class="card">
+        <p>You need a job before you can track an application.</p>
+        <a class="btn" href="{{ url_for('job_new') }}">+ Add Job</a>
+    </div>
+{% else %}
+<form method="post" class="card">
+    <div class="form-grid">
+        <div class="full">
+            <label class="required" for="job_id">Job</label>
+            <select id="job_id" name="job_id" required>
+                <option value="">Choose a job</option>
+                {% for j in jobs %}
+                    <option value="{{ j.job_id }}" {% if j.job_id|string == application.job_id|string %}selected{% endif %}>
+                        {{ j.job_title }} at {{ j.company_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="required" for="application_date">Application Date</label>
+            <input type="date" id="application_date" name="application_date" required value="{{ application.application_date or '' }}">
+        </div>
+        <div>
+            <label class="required" for="status">Status</label>
+            <select id="status" name="status" required>
+                {% for s in statuses %}
+                    <option value="{{ s }}" {% if s == application.status %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="current_round">Current Round</label>
+            <input type="number" id="current_round" name="current_round" min="0" max="20" value="{{ application.current_round or 0 }}">
+            <p class="hint">0 means no interviews yet.</p>
+        </div>
+        <div>
+            <label for="resume_version">Resume Version</label>
+            <input type="text" id="resume_version" name="resume_version" maxlength="50" placeholder="SWE_v3"
+                   value="{{ application.resume_version or '' }}">
+        </div>
+        <div class="full checkbox-row">
+            <input type="checkbox" id="cover_letter_sent" name="cover_letter_sent" {% if application.cover_letter_sent %}checked{% endif %}>
+            <label for="cover_letter_sent">Cover letter sent</label>
+        </div>
+    </div>
+
+    <h2 style="margin-top: 26px;">Interview Rounds</h2>
+    <p class="hint">Saved as JSON in the interview_data column. Leave a row blank to skip it. Save to get another empty row.</p>
+    <table>
+        <thead><tr><th>#</th><th>Date</th><th>Type</th><th>Interviewer</th><th>Notes</th></tr></thead>
+        <tbody>
+        {% for r in interview_rows %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><input type="date" name="round_date" value="{{ r.date or '' }}"></td>
+                <td>
+                    <select name="round_type">
+                        <option value="">Type</option>
+                        {% for t in interview_types %}
+                            <option value="{{ t }}" {% if t == r.type %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td><input type="text" name="round_interviewer" value="{{ r.interviewer or '' }}"></td>
+                <td><input type="text" name="round_notes" value="{{ r.notes or '' }}"></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="form-actions">
+        <button class="btn" type="submit">{{ "Save Changes" if is_edit else "Add Application" }}</button>
+        <a class="btn btn-secondary" href="{{ url_for('application_detail', application_id=application.application_id) if is_edit else url_for('applications') }}">Cancel</a>
+    </div>
+</form>
+{% endif %}
+{% endblock %}

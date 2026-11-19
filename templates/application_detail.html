@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Application{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ application.job_title }} at {{ application.company_name }}</h1>
+    <div>
+        <a class="btn btn-secondary" href="{{ url_for('application_edit', application_id=application.application_id) }}">Edit</a>
+        <form method="post" action="{{ url_for('application_delete', application_id=application.application_id) }}" style="display:inline"
+              onsubmit="return confirm('Delete this application?');">
+            <button class="btn btn-danger" type="submit">Delete</button>
+        </form>
+    </div>
+</div>
+
+<section class="card">
+    <dl class="detail-grid">
+        <dt>Status</dt><dd><span class="badge status-{{ application.status | lower }}">{{ application.status }}</span></dd>
+        <dt>Current Round</dt><dd>{{ application.current_round if application.current_round else "No interviews yet" }}</dd>
+        <dt>Applied On</dt><dd>{{ application.application_date.strftime('%B %d, %Y') }}</dd>
+        <dt>Job</dt><dd><a href="{{ url_for('job_detail', job_id=application.job_id) }}">{{ application.job_title }}</a></dd>
+        <dt>Company</dt><dd><a href="{{ url_for('company_detail', company_id=application.company_id) }}">{{ application.company_name }}</a></dd>
+        <dt>Resume Version</dt><dd>{{ application.resume_version or "Not recorded" }}</dd>
+        <dt>Cover Letter</dt><dd>{{ "Sent" if application.cover_letter_sent else "Not sent" }}</dd>
+    </dl>
+</section>
+
+<section class="card">
+    <h2>Interview Rounds ({{ application.interviews | length }})</h2>
+    {% if application.interviews %}
+    <table>
+        <thead><tr><th>Round</th><th>Date</th><th>Type</th><th>Interviewer</th><th>Notes</th></tr></thead>
+        <tbody>
+        {% for r in application.interviews %}
+            <tr>
+                <td>{{ r.round }}</td>
+                <td>{{ r.date }}</td>
+                <td>{{ r.type or "" }}</td>
+                <td>{{ r.interviewer or "" }}</td>
+                <td>{{ r.notes or "" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}<p class="muted">No interviews recorded yet.</p>{% endif %}
+</section>
+
+<a href="{{ url_for('applications') }}">&larr; Back to Applications</a>
+{% endblock %}
