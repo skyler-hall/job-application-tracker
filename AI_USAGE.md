@@ -54,9 +54,12 @@ error or a screenshot and we fixed it together.
   - Re-saved `requirements.txt` as UTF-8 after PowerShell wrote it as UTF-16.
   - Caught that my `.gitignore` only had `.env` in it and added the Python cache and venv folders.
   - Committed template files I had missed (they still showed as untracked after a commit).
-- **Code review:** Pylance flagged that `query_one` could return `None` and crash. I checked that it can't
-  happen for `COUNT(*)` queries (they always return one row), and that the routes use `or abort(404)` for
-  rows that might not exist.
+- **Code review and debugging:**
+  - Pylance showed 40+ type errors because the MySQL driver doesn't say what type a row is. I added
+    type hints to `query_all`, `query_one`, and `execute` (`-> list[dict[str, Any]]`), plus an `assert`
+    for the dashboard `COUNT(*)` query, which always returns one row. That brought it to 0 errors.
+  - The Pylance errors also exposed a real bug: the application validation code never got added to
+    `validators.py`, so adding or editing an application would have crashed. I added it and tested the form.
 
 ## Lessons Learned
 
@@ -72,3 +75,6 @@ error or a screenshot and we fixed it together.
   read and explain.
 - **Security basics matter.** Parameterized queries (`%s`) prevent SQL injection, deletes should only happen
   through POST, and passwords belong in `.env`, never in GitHub.
+- **Checker warnings can hide real bugs.** Most Pylance warnings were type-hint noise, but one of them
+  pointed to code I had never pasted in. Reading the warnings instead of ignoring them caught a crash
+  before my demo.
