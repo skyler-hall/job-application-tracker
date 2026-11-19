@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Job Match{% endblock %}
+
+{% block content %}
+<h1>Job Match</h1>
+
+<form method="get" class="card">
+    <label for="skills">Your Skills</label>
+    <div class="search-bar">
+        <input type="text" id="skills" name="skills" value="{{ skills_text }}"
+               placeholder="Python, SQL, Flask" style="flex: 1;" autofocus>
+        <button class="btn" type="submit">Find Matches</button>
+    </div>
+    <p class="hint">Separate skills with commas. Matching ignores capitals, and knows nicknames like JS = JavaScript.</p>
+    <div class="checkbox-row" style="margin-top: 8px;">
+        <input type="checkbox" id="show_all" name="show_all" {% if include_zero %}checked{% endif %}>
+        <label for="show_all" style="font-weight: normal;">Also show jobs with 0% match</label>
+    </div>
+</form>
+
+{% if user_skills %}
+    <p>
+        <strong>Your skills:</strong>
+        {% for s in user_skills %}<span class="tag">{{ s }}</span>{% endfor %}
+    </p>
+
+    {% if results %}
+        <h2>Matching Jobs ({{ results | length }})</h2>
+        {% for r in results %}
+            {% set level = "high" if r.percent >= 75 else ("mid" if r.percent >= 40 else "low") %}
+            <div class="card match-card">
+                <div class="match-pct match-{{ level }}">{{ r.percent }}%</div>
+                <div class="match-info">
+                    <h3>{{ loop.index }}. <a href="{{ url_for('job_detail', job_id=r.job_id) }}">{{ r.job_title }}</a> at {{ r.company_name }}</h3>
+                    <p class="muted" style="margin: 0 0 6px;">{{ r.matched | length }}/{{ r.skills | length }} skills{% if r.job_type %} &middot; {{ r.job_type }}{% endif %}</p>
+                    <div>
+                        {% for s in r.matched %}<span class="tag tag-matched">&#10003; {{ s }}</span>{% endfor %}
+                        {% for s in r.missing %}<span class="tag tag-missing">{{ s }}</span>{% endfor %}
+                    </div>
+                    {% if r.missing %}<p style="margin: 6px 0 0;"><strong>Missing:</strong> {{ r.missing | join(", ") }}</p>{% endif %}
+                </div>
+                <a class="btn btn-sm" href="{{ url_for('application_new', job_id=r.job_id) }}">Track Application</a>
+            </div>
+        {% endfor %}
+
+        {% if skills_to_learn %}
+        <section class="card">
+            <h2>Skills to Learn Next</h2>
+            <p class="muted">The missing skills that show up most across these jobs:</p>
+            {% for skill, count in skills_to_learn %}
+                <span class="tag">{{ skill }} ({{ count }} job{{ "s" if count > 1 }})</span>
+            {% endfor %}
+        </section>
+        {% endif %}
+    {% else %}
+        <div class="card"><p class="muted">No jobs match those skills yet. Try adding more skills, or check "show 0% matches".</p></div>
+    {% endif %}
+{% endif %}
+{% endblock %}

@@ -6,6 +6,7 @@ from flask import Flask, abort, flash, redirect, render_template, request, url_f
 from mysql.connector import IntegrityError
 
 import database as db
+import matching
 import validators as v
 
 app = Flask(__name__)
@@ -334,6 +335,22 @@ def event_delete(event_id):
     db.delete_event(event_id)
     flash(f"Deleted {event['event_name']}.", "success")
     return redirect(url_for("events"))
+
+# ---------------------------------------------------------------------
+# Job Match
+# ---------------------------------------------------------------------
+
+@app.route("/job-match")
+def job_match():
+    skills_text = request.args.get("skills", "").strip()
+    include_zero = request.args.get("show_all") == "on"
+    user_skills = matching.parse_skill_input(skills_text)
+    results, skills_to_learn = [], []
+    if user_skills:
+        results, skills_to_learn = matching.rank_jobs(user_skills, db.get_jobs(), include_zero)
+    return render_template("job_match.html", skills_text=skills_text, user_skills=user_skills,
+                           results=results, skills_to_learn=skills_to_learn,
+                           include_zero=include_zero)
 
 if __name__ == "__main__":
     app.run(debug=True)
