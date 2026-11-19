@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if is_edit else "Add" }} Company{% endblock %}
+
+{% block content %}
+<h1>{{ "Edit " ~ company.company_name if is_edit else "Add Company" }}</h1>
+
+<form method="post" class="card">
+    <div class="form-grid">
+        <div class="full">
+            <label class="required" for="company_name">Company Name</label>
+            <input type="text" id="company_name" name="company_name" maxlength="100" required
+                   value="{{ company.company_name or '' }}">
+        </div>
+        <div>
+            <label for="industry">Industry</label>
+            <input type="text" id="industry" name="industry" maxlength="50" value="{{ company.industry or '' }}">
+        </div>
+        <div>
+            <label for="website">Website</label>
+            <input type="url" id="website" name="website" maxlength="200" placeholder="https://"
+                   value="{{ company.website or '' }}">
+        </div>
+        <div>
+            <label for="city">City</label>
+            <input type="text" id="city" name="city" maxlength="50" value="{{ company.city or '' }}">
+        </div>
+        <div>
+            <label for="state">State</label>
+            <input type="text" id="state" name="state" maxlength="50" value="{{ company.state or '' }}">
+        </div>
+        <div class="full">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes">{{ company.notes or '' }}</textarea>
+        </div>
+    </div>
+    <div class="form-actions">
+        <button class="btn" type="submit">{{ "Save Changes" if is_edit else "Add Company" }}</button>
+        <a class="btn btn-secondary"
+           href="{{ url_for('company_detail', company_id=company.company_id) if is_edit else url_for('companies') }}">Cancel</a>
+    </div>
+</form>
+{% endblock %}

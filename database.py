@@ -104,3 +104,65 @@ def get_dashboard_stats():
         "recent": recent,
         "upcoming_events": upcoming_events,
     }
+
+# ---------------------------------------------------------------------
+# Companies
+# ---------------------------------------------------------------------
+
+def get_companies(search=None):
+    """All companies (optionally filtered by a search term), with how many
+    jobs and contacts each one has."""
+    sql = """
+        SELECT c.*,
+               (SELECT COUNT(*) FROM jobs j     WHERE j.company_id = c.company_id)  AS job_count,
+               (SELECT COUNT(*) FROM contacts t WHERE t.company_id = c.company_id) AS contact_count
+        FROM companies c
+    """
+    params = []
+    if search:
+        sql += " WHERE c.company_name LIKE %s OR c.industry LIKE %s OR c.city LIKE %s"
+        like = f"%{search}%"
+        params = [like, like, like]
+    sql += " ORDER BY c.company_name"
+    return query_all(sql, params)
+
+
+def get_company(company_id):
+    return query_one("SELECT * FROM companies WHERE company_id = %s", (company_id,))
+
+
+def create_company(data):
+    return execute("""
+        INSERT INTO companies (company_name, industry, website, city, state, notes)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (data["company_name"], data["industry"], data["website"],
+          data["city"], data["state"], data["notes"]))
+
+
+def update_company(company_id, data):
+    execute("""
+        UPDATE companies
+        SET company_name = %s, industry = %s, website = %s,
+            city = %s, state = %s, notes = %s
+        WHERE company_id = %s
+    """, (data["company_name"], data["industry"], data["website"],
+          data["city"], data["state"], data["notes"], company_id))
+
+
+def delete_company(company_id):
+    execute("DELETE FROM companies WHERE company_id = %s", (company_id,))
+
+
+def get_company_related(company_id):
+    """Jobs, contacts, and events linked to one company (for its detail page)."""
+    return {
+        "jobs": query_all(
+            "SELECT * FROM jobs WHERE company_id = %s ORDER BY date_posted DESC",
+            (company_id,)),
+        "contacts": query_all(
+            "SELECT * FROM contacts WHERE company_id = %s ORDER BY contact_name",
+            (company_id,)),
+        "events": query_all(
+            "SELECT * FROM events WHERE company_id = %s ORDER BY event_date DESC",
+            (company_id,)),
+    }

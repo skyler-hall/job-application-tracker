@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ company.company_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ company.company_name }}</h1>
+    <div>
+        <a class="btn btn-secondary" href="{{ url_for('company_edit', company_id=company.company_id) }}">Edit</a>
+        <form method="post" action="{{ url_for('company_delete', company_id=company.company_id) }}" style="display:inline"
+              onsubmit="return confirm('Delete {{ company.company_name }}? This also deletes its jobs, applications, and contacts.');">
+            <button class="btn btn-danger" type="submit">Delete</button>
+        </form>
+    </div>
+</div>
+
+<section class="card">
+    <dl class="detail-grid">
+        <dt>Industry</dt><dd>{{ company.industry or "None" }}</dd>
+        <dt>Website</dt>
+        <dd>{% if company.website %}<a href="{{ company.website }}" target="_blank" rel="noopener">{{ company.website }}</a>{% else %}None{% endif %}</dd>
+        <dt>Location</dt><dd>{{ [company.city, company.state] | select | join(", ") or "None" }}</dd>
+        <dt>Notes</dt><dd>{{ company.notes or "None" }}</dd>
+    </dl>
+</section>
+
+<div class="two-col">
+    <section class="card">
+        <h2>Jobs ({{ jobs | length }})</h2>
+        {% if jobs %}
+            <ul class="simple-list">
+            {% for j in jobs %}
+                <li>{{ j.job_title }} <span class="muted">{{ j.job_type or "" }}</span></li>
+            {% endfor %}
+            </ul>
+        {% else %}<p class="muted">No jobs yet.</p>{% endif %}
+    </section>
+
+    <section class="card">
+        <h2>Contacts ({{ contacts | length }})</h2>
+        {% if contacts %}
+            <ul class="simple-list">
+            {% for t in contacts %}
+                <li>{{ t.contact_name }} <span class="muted">{{ t.title or "" }}</span></li>
+            {% endfor %}
+            </ul>
+        {% else %}<p class="muted">No contacts yet.</p>{% endif %}
+    </section>
+</div>
+
+<section class="card">
+    <h2>Events ({{ events | length }})</h2>
+    {% if events %}
+        <ul class="simple-list">
+        {% for e in events %}
+            <li><strong>{{ e.event_date.strftime('%b %d, %Y') }}</strong> {{ e.event_name }} <span class="muted">{{ e.event_type or "" }}</span></li>
+        {% endfor %}
+        </ul>
+    {% else %}<p class="muted">No events yet.</p>{% endif %}
+</section>
+
+<a href="{{ url_for('companies') }}">&larr; Back to Companies</a>
+{% endblock %}
