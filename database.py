@@ -1,6 +1,7 @@
 """Database connection and query helpers for the Job Application Tracker."""
 import json
 import os
+from typing import Any
 
 import mysql.connector
 from dotenv import load_dotenv
@@ -21,24 +22,24 @@ def get_db():
     return mysql.connector.connect(**DB_CONFIG)
 
 
-def query_all(sql, params=None):
+def query_all(sql, params=None) -> list[dict[str, Any]]:
     """Run a SELECT and return every row as a list of dictionaries."""
     conn = get_db()
     try:
         cursor = conn.cursor(dictionary=True)
         cursor.execute(sql, params or ())
-        return cursor.fetchall()
+        return cursor.fetchall()  # type: ignore[return-value]
     finally:
         conn.close()
 
 
-def query_one(sql, params=None):
+def query_one(sql, params=None) -> dict[str, Any] | None:
     """Run a SELECT and return just the first row (or None)."""
     rows = query_all(sql, params)
     return rows[0] if rows else None
 
 
-def execute(sql, params=None):
+def execute(sql, params=None) -> int:
     """Run an INSERT, UPDATE, or DELETE and save the change.
     Returns the new row's id for INSERTs."""
     conn = get_db()
@@ -46,10 +47,9 @@ def execute(sql, params=None):
         cursor = conn.cursor()
         cursor.execute(sql, params or ())
         conn.commit()
-        return cursor.lastrowid
+        return cursor.lastrowid or 0
     finally:
         conn.close()
-
 
 # ---------------------------------------------------------------------
 # Dashboard
@@ -67,6 +67,7 @@ def get_dashboard_stats():
                (SELECT COUNT(*) FROM contacts)     AS contacts,
                (SELECT COUNT(*) FROM events)       AS events
     """)
+    assert counts is not None  # COUNT(*) always returns exactly one row
 
     # How many applications are in each status (0 if none)
     rows = query_all("SELECT status, COUNT(*) AS total FROM applications GROUP BY status")

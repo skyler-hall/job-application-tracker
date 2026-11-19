@@ -211,7 +211,8 @@ def application_edit(application_id):
 
 @app.route("/applications/<int:application_id>/delete", methods=["POST"])
 def application_delete(application_id):
-    db.get_application(application_id) or abort(404)
+    if not db.get_application(application_id):
+        abort(404)
     db.delete_application(application_id)
     flash("Application deleted.", "success")
     return redirect(url_for("applications"))

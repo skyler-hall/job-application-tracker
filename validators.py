@@ -165,3 +165,55 @@ def validate_event(form, company_ids):
     check_date(errors, "Event date", data["event_date"], required=True)
     check_length(errors, "Location", data["location"], 100)
     return data, errors
+
+STATUSES = ["Applied", "Screening", "Interview", "Offer", "Rejected", "Withdrawn"]
+INTERVIEW_TYPES = ["Phone", "Video", "Technical", "Behavioral", "Onsite", "Final", "Other"]
+
+
+def parse_interviews(form, errors):
+    """Read the interview round rows (round_date[], round_type[], ...) from the
+    form and build the list that gets saved in the interview_data JSON column.
+    Rows left completely blank are skipped."""
+    dates = form.getlist("round_date")
+    types = form.getlist("round_type")
+    interviewers = form.getlist("round_interviewer")
+    notes = form.getlist("round_notes")
+    rounds = []
+    for i in range(len(dates)):
+        row = {
+            "date": clean(dates[i]),
+            "type": clean(types[i]) if i < len(types) else None,
+            "interviewer": clean(interviewers[i]) if i < len(interviewers) else None,
+            "notes": clean(notes[i]) if i < len(notes) else None,
+        }
+        if not any(row.values()):
+            continue
+        check_date(errors, f"Interview {len(rounds) + 1} date", row["date"], required=True)
+        if row["type"] and row["type"] not in INTERVIEW_TYPES:
+            errors.append(f"Interview {len(rounds) + 1} has an invalid type.")
+        row["round"] = len(rounds) + 1
+        rounds.append(row)
+    return rounds
+
+
+def validate_application(form, job_ids):
+    errors = []
+    data = {
+        "job_id": clean(form.get("job_id")),
+        "application_date": clean(form.get("application_date")),
+        "status": clean(form.get("status")) or "Applied",
+        "resume_version": clean(form.get("resume_version")),
+        "cover_letter_sent": form.get("cover_letter_sent") == "on",
+    }
+    data["current_round"] = parse_int(errors, "Current round", clean(form.get("current_round"))) or 0
+    data["interviews"] = parse_interviews(form, errors)
+
+    if not data["job_id"] or not data["job_id"].isdigit() or int(data["job_id"]) not in job_ids:
+        errors.append("Please choose a job.")
+    check_date(errors, "Application date", data["application_date"], required=True)
+    if data["status"] not in STATUSES:
+        errors.append("Please choose a valid status.")
+    if data["current_round"] > 20:
+        errors.append("Current round must be 20 or less.")
+    check_length(errors, "Resume version", data["resume_version"], 50)
+    return data, errors
