@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Jobs{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Jobs</h1>
+    <a class="btn" href="{{ url_for('job_new') }}">+ Add Job</a>
+</div>
+
+<form class="search-bar card" method="get">
+    <input type="text" name="q" value="{{ search }}" placeholder="Search by title or company">
+    <select name="type">
+        <option value="">All job types</option>
+        {% for t in job_types %}
+            <option value="{{ t }}" {% if t == job_type %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+    </select>
+    <button class="btn" type="submit">Filter</button>
+    {% if search or job_type %}<a class="btn btn-secondary" href="{{ url_for('jobs') }}">Clear</a>{% endif %}
+</form>
+
+<div class="card">
+{% if jobs %}
+    <table>
+        <thead>
+            <tr><th>Job</th><th>Company</th><th>Type</th><th>Salary</th><th>Skills</th><th>Posted</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for j in jobs %}
+            <tr>
+                <td><a href="{{ url_for('job_detail', job_id=j.job_id) }}"><strong>{{ j.job_title }}</strong></a></td>
+                <td><a href="{{ url_for('company_detail', company_id=j.company_id) }}">{{ j.company_name }}</a></td>
+                <td>{{ j.job_type or "" }}</td>
+                <td>
+                    {% if j.salary_min and j.salary_max %}${{ "{:,}".format(j.salary_min) }} - ${{ "{:,}".format(j.salary_max) }}
+                    {% elif j.salary_min %}${{ "{:,}".format(j.salary_min) }}+
+                    {% elif j.salary_max %}Up to ${{ "{:,}".format(j.salary_max) }}{% endif %}
+                </td>
+                <td>{% for s in j.skills %}<span class="tag">{{ s }}</span>{% endfor %}</td>
+                <td>{{ j.date_posted.strftime('%b %d, %Y') if j.date_posted else "" }}</td>
+                <td class="actions">
+                    <a class="btn btn-sm btn-secondary" href="{{ url_for('job_edit', job_id=j.job_id) }}">Edit</a>
+                    <form method="post" action="{{ url_for('job_delete', job_id=j.job_id) }}"
+                          onsubmit="return confirm('Delete {{ j.job_title }} at {{ j.company_name }}? This also deletes its {{ j.app_count }} application(s).');">
+                        <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p class="muted">No jobs found.</p>
+{% endif %}
+</div>
+{% endblock %}

@@ -268,3 +268,6 @@ textarea { min-height: 80px; resize: vertical; }
 
 /* Make date pickers readable on the dark background */
 input[type=date] { color-scheme: dark; }
+
+/* Checkboxes match the theme */
+input[type=checkbox] { accent-color: var(--primary); width: 16px; height: 16px; }

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ job.job_title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ job.job_title }}</h1>
+    <div>
+        <a class="btn" href="/applications/new?job_id={{ job.job_id }}">+ Apply / Track Application</a>
+        <a class="btn btn-secondary" href="{{ url_for('job_edit', job_id=job.job_id) }}">Edit</a>
+        <form method="post" action="{{ url_for('job_delete', job_id=job.job_id) }}" style="display:inline"
+              onsubmit="return confirm('Delete {{ job.job_title }}? This also deletes its applications.');">
+            <button class="btn btn-danger" type="submit">Delete</button>
+        </form>
+    </div>
+</div>
+
+<section class="card">
+    <dl class="detail-grid">
+        <dt>Company</dt><dd><a href="{{ url_for('company_detail', company_id=job.company_id) }}">{{ job.company_name }}</a></dd>
+        <dt>Type</dt><dd>{{ job.job_type or "Not specified" }}</dd>
+        <dt>Salary</dt>
+        <dd>{% if job.salary_min or job.salary_max %}${{ "{:,}".format(job.salary_min or 0) }} - ${{ "{:,}".format(job.salary_max or 0) }}{% else %}Not listed{% endif %}</dd>
+        <dt>Posted</dt><dd>{{ job.date_posted.strftime('%B %d, %Y') if job.date_posted else "Unknown" }}</dd>
+        <dt>Posting</dt>
+        <dd>{% if job.job_url %}<a href="{{ job.job_url }}" target="_blank" rel="noopener">{{ job.job_url }}</a>{% else %}None{% endif %}</dd>
+        <dt>Skills</dt>
+        <dd>{% for s in job.skills %}<span class="tag">{{ s }}</span>{% else %}None listed{% endfor %}</dd>
+    </dl>
+</section>
+
+<section class="card">
+    <h2>Applications ({{ applications | length }})</h2>
+    {% if applications %}
+        <ul class="simple-list">
+        {% for a in applications %}
+            <li>
+                <a href="/applications/{{ a.application_id }}">Applied {{ a.application_date.strftime('%b %d, %Y') }}</a>
+                <span class="badge status-{{ a.status | lower }}">{{ a.status }}</span>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}<p class="muted">You haven't applied to this job yet.</p>{% endif %}
+</section>
+
+<a href="{{ url_for('jobs') }}">&larr; Back to Jobs</a>
+{% endblock %}
