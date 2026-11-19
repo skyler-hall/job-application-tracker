@@ -1,3 +1,5 @@
+**Demo video:** [demo/Demo-Recording.mp4](demo/Demo-Recording.mp4)
+
 # Job Application Tracker
 
 A full-stack web app for tracking job applications, built with **MySQL**, **Python/Flask**, and **HTML/CSS**.
