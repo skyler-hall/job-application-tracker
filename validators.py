@@ -56,3 +56,60 @@ def validate_company(form):
     check_length(errors, "State", data["state"], 50)
     check_url(errors, "Website", data["website"])
     return data, errors
+
+JOB_TYPES = ["Full-time", "Part-time", "Contract", "Internship"]
+
+
+def parse_skills(text):
+    """Turn "Python, SQL,  flask" into ["Python", "SQL", "flask"], skipping
+    blanks and duplicates (case-insensitive)."""
+    skills, seen = [], set()
+    for part in (text or "").split(","):
+        skill = part.strip()
+        if skill and skill.lower() not in seen:
+            seen.add(skill.lower())
+            skills.append(skill)
+    return skills
+
+
+def parse_int(errors, label, value):
+    """Convert a form value to a whole number, or None if empty."""
+    if not value:
+        return None
+    try:
+        number = int(value.replace(",", ""))
+    except ValueError:
+        errors.append(f"{label} must be a whole number.")
+        return None
+    if number < 0:
+        errors.append(f"{label} cannot be negative.")
+    return number
+
+
+def validate_job(form, company_ids):
+    errors = []
+    data = {
+        "company_id": clean(form.get("company_id")),
+        "job_title": clean(form.get("job_title")),
+        "job_type": clean(form.get("job_type")),
+        "job_url": clean(form.get("job_url")),
+        "date_posted": clean(form.get("date_posted")),
+        "skills": parse_skills(form.get("requirements")),
+    }
+    data["salary_min"] = parse_int(errors, "Minimum salary", clean(form.get("salary_min")))
+    data["salary_max"] = parse_int(errors, "Maximum salary", clean(form.get("salary_max")))
+
+    if not data["company_id"] or not data["company_id"].isdigit() or int(data["company_id"]) not in company_ids:
+        errors.append("Please choose a company.")
+    if not data["job_title"]:
+        errors.append("Job title is required.")
+    check_length(errors, "Job title", data["job_title"], 100)
+    if data["job_type"] and data["job_type"] not in JOB_TYPES:
+        errors.append("Please choose a valid job type.")
+    check_length(errors, "Job URL", data["job_url"], 300)
+    check_url(errors, "Job URL", data["job_url"])
+    check_date(errors, "Date posted", data["date_posted"])
+    if (data["salary_min"] is not None and data["salary_max"] is not None
+            and data["salary_min"] > data["salary_max"]):
+        errors.append("Minimum salary cannot be more than maximum salary.")
+    return data, errors

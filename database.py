@@ -1,4 +1,5 @@
 """Database connection and query helpers for the Job Application Tracker."""
+import json
 import os
 
 import mysql.connector
@@ -166,3 +167,91 @@ def get_company_related(company_id):
             "SELECT * FROM events WHERE company_id = %s ORDER BY event_date DESC",
             (company_id,)),
     }
+
+
+# ---------------------------------------------------------------------
+# Jobs
+# ---------------------------------------------------------------------
+
+def parse_json_list(value):
+    """MySQL hands JSON columns back as text. Turn that into a Python list."""
+    if not value:
+        return []
+    if isinstance(value, (bytes, bytearray)):
+        value = value.decode("utf-8")
+    if isinstance(value, str):
+        value = json.loads(value)
+    return value if isinstance(value, list) else []
+
+
+def _with_skills(job):
+    """Add a 'skills' list to a job row, parsed from its JSON requirements."""
+    if job:
+        job["skills"] = parse_json_list(job.get("requirements"))
+    return job
+
+
+def get_jobs(search=None, job_type=None):
+    """All jobs with their company name, newest first."""
+    sql = """
+        SELECT j.*, c.company_name,
+               (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.job_id) AS app_count
+        FROM jobs j
+        JOIN companies c ON j.company_id = c.company_id
+        WHERE 1 = 1
+    """
+    params = []
+    if search:
+        sql += " AND (j.job_title LIKE %s OR c.company_name LIKE %s)"
+        params += [f"%{search}%", f"%{search}%"]
+    if job_type:
+        sql += " AND j.job_type = %s"
+        params.append(job_type)
+    sql += " ORDER BY j.date_posted DESC, j.job_id DESC"
+    return [_with_skills(job) for job in query_all(sql, params)]
+
+
+def get_job(job_id):
+    return _with_skills(query_one("""
+        SELECT j.*, c.company_name
+        FROM jobs j JOIN companies c ON j.company_id = c.company_id
+        WHERE j.job_id = %s
+    """, (job_id,)))
+
+
+def get_company_choices():
+    """(id, name) pairs for company dropdown menus."""
+    return query_all("SELECT company_id, company_name FROM companies ORDER BY company_name")
+
+
+def _job_params(data):
+    return (data["company_id"], data["job_title"], data["job_type"],
+            data["salary_min"], data["salary_max"], data["job_url"],
+            data["date_posted"], json.dumps(data["skills"]))
+
+
+def create_job(data):
+    return execute("""
+        INSERT INTO jobs (company_id, job_title, job_type, salary_min, salary_max,
+                          job_url, date_posted, requirements)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, _job_params(data))
+
+
+def update_job(job_id, data):
+    execute("""
+        UPDATE jobs
+        SET company_id = %s, job_title = %s, job_type = %s, salary_min = %s,
+            salary_max = %s, job_url = %s, date_posted = %s, requirements = %s
+        WHERE job_id = %s
+    """, _job_params(data) + (job_id,))
+
+
+def delete_job(job_id):
+    execute("DELETE FROM jobs WHERE job_id = %s", (job_id,))
+
+
+def get_job_applications(job_id):
+    return query_all(
+        "SELECT * FROM applications WHERE job_id = %s ORDER BY application_date DESC",
+        (job_id,))
